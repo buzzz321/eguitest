@@ -21,6 +21,15 @@ impl Default for MyApp {
     }
 }
 
+impl MyApp{
+    fn get_measurement(&self)->Line{
+        let sin = (0..1000).map(|i| {
+            let x = i as f64 * 0.01;
+            Value::new(x, x.sin())
+        });
+        Line::new(Values::from_values_iter(sin))
+    }
+}
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -33,14 +42,10 @@ impl eframe::App for MyApp {
                     ui.label("Some text 3");
                 });
                 
-                let sin = (0..1000).map(|i| {
-                    let x = i as f64 * 0.01;
-                    Value::new(x, x.sin())
-                });
-                let line = Line::new(Values::from_values_iter(sin));
-                let myplot = Plot::new("Sinus plotter").data_aspect(1.5).height(window_height-5.0);
+                
+                let myplot = Plot::new("Sinus plotter").data_aspect(1.0).height(window_height-5.0);
                 myplot.show(ui, |plot_ui| {
-                    plot_ui.line(line);
+                    plot_ui.line(self.get_measurement());
                 });
             });
             
