@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Line, Plot, Value, Values};
+use egui::plot::{Line, Points, Plot, Value, Values};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -51,6 +51,7 @@ impl MyApp {
 }
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let Self { data } = self;
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_height = ui.available_height();
             ui.heading("My egui Application");
@@ -65,8 +66,8 @@ impl eframe::App for MyApp {
                     .data_aspect(1.0)
                     .height(window_height - 5.0);
                 myplot.show(ui, |plot_ui| {
-                    let line = Line::new(Values::from_values(self.data.clone()));
-                    plot_ui.line(line);
+                    let points = Points::new(Values::from_values(data.to_vec()));//will do a .clone()
+                    plot_ui.points(points);
                 });
             });
         });
