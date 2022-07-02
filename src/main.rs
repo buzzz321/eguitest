@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Line, Points, Plot, Value, Values};
+use egui::plot::{Line, Plot, Points, Value, Values};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -62,11 +62,13 @@ impl eframe::App for MyApp {
                     ui.label("Some text 3");
                 });
 
-                let myplot = Plot::new("Sinus plotter")
+                let plot = Plot::new(format!("Sinus plotter {}", 1.to_string()))
                     .data_aspect(1.0)
-                    .height(window_height - 5.0);
-                myplot.show(ui, |plot_ui| {
-                    let points = Points::new(Values::from_values(data.to_vec()));//will do a .clone()
+                    .view_aspect(0.8)
+                    .height(window_height);
+
+                plot.show(ui, |plot_ui| {
+                    let points = Points::new(Values::from_values(data.to_vec())); //will do a .clone()
                     plot_ui.points(points);
                 });
             });
