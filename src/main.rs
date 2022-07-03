@@ -3,6 +3,7 @@ use eframe::egui;
 use egui::plot::{Line, Plot, Points, Value, Values};
 use std::fs::File;
 use std::io::prelude::*;
+use std::time::SystemTime;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -13,12 +14,14 @@ fn main() {
 
 struct MyApp {
     data: Vec<Value>,
+    before: SystemTime,
 }
 
 impl Default for MyApp {
     fn default() -> Self {
         Self {
             data: Vec::<Value>::new(),
+            before: SystemTime::now(),
         }
     }
 }
@@ -51,15 +54,31 @@ impl MyApp {
 }
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let Self { data } = self;
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_height = ui.available_height();
             ui.heading("My egui Application");
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    ui.label("Some text 1");
-                    ui.label("Some text 2");
-                    ui.label("Some text 3");
+                    ui.horizontal(|ui| {
+                        ui.set_width(120.0);
+                        ui.label("Time (ms)");
+                        let now = SystemTime::now();
+                        let elapse = now.duration_since(self.before).unwrap();
+                        self.before = now;
+                        ui.text_edit_singleline(&mut elapse.as_millis().to_string());
+                    });
+                    ui.horizontal(|ui| {
+                        ui.set_width(120.0);
+                        ui.label("Some text 2");
+
+                        ui.text_edit_singleline(&mut "1234");
+                    });
+                    ui.horizontal(|ui| {
+                        ui.set_width(120.0);
+                        ui.label("Some text 3");
+
+                        ui.text_edit_singleline(&mut "1234");
+                    });
                 });
 
                 let plot = Plot::new(format!("Sinus plotter {}", 1.to_string()))
@@ -68,7 +87,7 @@ impl eframe::App for MyApp {
                     .height(window_height);
 
                 plot.show(ui, |plot_ui| {
-                    let points = Points::new(Values::from_values(data.to_vec())); //will do a .clone()
+                    let points = Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
                     plot_ui.points(points);
                 });
             });
