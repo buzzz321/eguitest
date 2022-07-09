@@ -80,15 +80,27 @@ impl eframe::App for MyApp {
                         ui.text_edit_singleline(&mut "1234");
                     });
                 });
+                ui.vertical(|ui| {
+                    for column in 1..5 {
+                        ui.horizontal(|ui| {
+                            for row in 1..5 {
+                                let plot = Plot::new(format!(
+                                    "Sinus plotter {}-{}",
+                                    row.to_string(),
+                                    column.to_string()
+                                ))
+                                .data_aspect(1.0)
+                                .view_aspect(0.2)
+                                .height(window_height / 5.0);
 
-                let plot = Plot::new(format!("Sinus plotter {}", 1.to_string()))
-                    .data_aspect(1.0)
-                    .view_aspect(0.8)
-                    .height(window_height);
-
-                plot.show(ui, |plot_ui| {
-                    let points = Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
-                    plot_ui.points(points);
+                                plot.show(ui, |plot_ui| {
+                                    let points =
+                                        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                                    plot_ui.points(points);
+                                });
+                            }
+                        });
+                    }
                 });
             });
         });
