@@ -1,9 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Line, Plot, Points, Value, Values};
+use egui::plot::{Legend, Line, Plot, Points, Value, Values};
+use egui::Vec2;
 use std::fs::File;
 use std::io::prelude::*;
 use std::time::SystemTime;
+
+const ROW: usize = 5;
+const COL: usize = 5;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -15,6 +19,7 @@ fn main() {
 struct MyApp {
     data: Vec<Value>,
     before: SystemTime,
+    plot_clicked: [bool; COL * ROW],
 }
 
 impl Default for MyApp {
@@ -22,6 +27,7 @@ impl Default for MyApp {
         Self {
             data: Vec::<Value>::new(),
             before: SystemTime::now(),
+            plot_clicked: [false; COL * ROW],
         }
     }
 }
@@ -81,9 +87,9 @@ impl eframe::App for MyApp {
                     });
                 });
                 ui.vertical(|ui| {
-                    for column in 1..5 {
+                    for row in 1..ROW {
                         ui.horizontal(|ui| {
-                            for row in 1..5 {
+                            for column in 1..COL {
                                 let plot = Plot::new(format!(
                                     "Sinus plotter {}-{}",
                                     row.to_string(),
@@ -91,17 +97,45 @@ impl eframe::App for MyApp {
                                 ))
                                 .data_aspect(1.0)
                                 .view_aspect(0.2)
-                                .height(window_height / 5.0);
+                                .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
+                                .height(window_height / ROW as f32);
 
                                 plot.show(ui, |plot_ui| {
                                     let points =
                                         Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
                                     plot_ui.points(points);
+                                    if plot_ui.plot_clicked() {
+                                        for (_, value) in self.plot_clicked.iter_mut().enumerate() {
+                                            *value = false;
+                                        }
+                                        println!("--> row {} col {}", row, column);
+                                        self.plot_clicked[column + row * ROW] = true;
+                                    }
                                 });
                             }
                         });
                     }
                 });
+                for (index, value) in self.plot_clicked.iter_mut().enumerate() {
+                    if *value {
+                        println!("{}  {}-{}", index, index / (ROW), index % COL);
+                        ui.label(format!("Plot  {}-{}", index / (ROW), index % COL));
+                        //*value = false;
+                        let plot = Plot::new(format!(
+                            "Sinus plotter {}-{}",
+                            (index / (ROW)).to_string(),
+                            (index % COL).to_string()
+                        ))
+                        .data_aspect(1.0)
+                        .view_aspect(1.0)
+                        .legend(Legend::default())
+                        .height(window_height);
+                        plot.show(ui, |plot_ui| {
+                            let points = Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                            plot_ui.points(points);
+                        });
+                    }
+                }
             });
         });
     }
