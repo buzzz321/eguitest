@@ -12,7 +12,10 @@ const COL: usize = 5;
 fn main() {
     let options = eframe::NativeOptions::default();
     let mut app = MyApp::default();
-    app.data = app.read_meas_data("seq.dat".to_string()).unwrap();
+    app.data = match app.read_meas_data("seq.dat".to_string()){
+        Ok(data) =>data,
+        Err(_) => app.get_measurement(),
+    };
     eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(app)));
 }
 
@@ -34,13 +37,15 @@ impl Default for MyApp {
 
 impl MyApp {
     #[allow(dead_code)]
-    fn get_measurement(&self) -> Values {
+    fn get_measurement(&self) -> Vec<Value> {
         let sin = (0..1000).map(|i| {
             let x = i as f64 * 0.01;
             Value::new(x.cos(), x.sin())
         });
-       Values::from_values_iter(sin)
+
+       sin.collect()
     }
+    
     fn read_meas_data(&mut self, filename: String) -> std::io::Result<Vec<Value>> {
         let mut ret_val = Vec::<Value>::new();
         let mut file = File::open(filename)?;
@@ -101,9 +106,9 @@ impl eframe::App for MyApp {
                                 .height(window_height / ROW as f32);
 
                                 plot.show(ui, |plot_ui| {
-                                //    let points =
-                                //        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
-                                    plot_ui.points(Points::new(self.get_measurement()));
+                                    let points =
+                                        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                                    plot_ui.points(points);
                                     if plot_ui.plot_clicked() {
                                         for (_, value) in self.plot_clicked.iter_mut().enumerate() {
                                             *value = false;
