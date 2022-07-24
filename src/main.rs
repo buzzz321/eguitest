@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Legend, Line, Plot, Points, Value, Values};
+use egui::plot::{Legend, Plot, Points, Value, Values};
 use egui::Vec2;
 use std::fs::File;
 use std::io::prelude::*;
@@ -34,12 +34,12 @@ impl Default for MyApp {
 
 impl MyApp {
     #[allow(dead_code)]
-    fn get_measurement(&self) -> Line {
+    fn get_measurement(&self) -> Values {
         let sin = (0..1000).map(|i| {
             let x = i as f64 * 0.01;
-            Value::new(x, x.sin())
+            Value::new(x.cos(), x.sin())
         });
-        Line::new(Values::from_values_iter(sin))
+       Values::from_values_iter(sin)
     }
     fn read_meas_data(&mut self, filename: String) -> std::io::Result<Vec<Value>> {
         let mut ret_val = Vec::<Value>::new();
@@ -101,9 +101,9 @@ impl eframe::App for MyApp {
                                 .height(window_height / ROW as f32);
 
                                 plot.show(ui, |plot_ui| {
-                                    let points =
-                                        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
-                                    plot_ui.points(points);
+                                //    let points =
+                                //        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                                    plot_ui.points(Points::new(self.get_measurement()));
                                     if plot_ui.plot_clicked() {
                                         for (_, value) in self.plot_clicked.iter_mut().enumerate() {
                                             *value = false;
@@ -118,7 +118,7 @@ impl eframe::App for MyApp {
                 });
                 for (index, value) in self.plot_clicked.iter_mut().enumerate() {
                     if *value {
-                        println!("{}  {}-{}", index, index / (ROW), index % COL);
+                        //println!("{}  {}-{}", index, index / (ROW), index % COL);
                         ui.label(format!("Plot  {}-{}", index / (ROW), index % COL));
                         //*value = false;
                         let plot = Plot::new(format!(
