@@ -8,4 +8,5 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
-eframe = "0.18.0"
+eframe = "0.21.0"
+egui = "0.21.0"

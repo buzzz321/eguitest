@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Legend, Plot, Points, Value, Values};
+use egui::plot::{Legend, Plot, PlotPoints, Points};
 use egui::Vec2;
 use std::fs::File;
 use std::io::prelude::*;
@@ -16,11 +16,11 @@ fn main() {
         Ok(data) => data,
         Err(_) => app.get_measurement(),
     };
-    eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(app)));
+    _ = eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(app)));
 }
 
 struct MyApp {
-    data: Vec<Value>,
+    data: PlotPoints,
     before: SystemTime,
     plot_clicked: [bool; COL * ROW],
 }
@@ -28,7 +28,7 @@ struct MyApp {
 impl Default for MyApp {
     fn default() -> Self {
         Self {
-            data: Vec::<Value>::new(),
+            data: PlotPoints::new(vec![[0.0, 0.0]]),
             before: SystemTime::now(),
             plot_clicked: [false; COL * ROW],
         }
@@ -37,29 +37,31 @@ impl Default for MyApp {
 
 impl MyApp {
     #[allow(dead_code)]
-    fn get_measurement(&self) -> Vec<Value> {
-        let sin = (0..1000).map(|i| {
-            let x = i as f64 * 0.01;
-            Value::new(x.cos(), x.sin())
-        });
-
-        sin.collect()
+    fn get_measurement(&self) -> PlotPoints {
+        (0..1000)
+            .map(|i| {
+                let x = i as f64 * 0.01;
+                [x.cos(), x.sin()]
+            })
+            .collect::<PlotPoints>()
     }
 
-    fn read_meas_data(&mut self, filename: String) -> std::io::Result<Vec<Value>> {
-        let mut ret_val = Vec::<Value>::new();
+    fn read_meas_data(&mut self, filename: String) -> std::io::Result<PlotPoints> {
         let mut file = File::open(filename)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        for line in contents.lines() {
-            let mut parts = line.split_ascii_whitespace();
-            let istr = parts.next().unwrap();
-            let qstr = parts.next().unwrap();
-            ret_val.push(Value::new(
-                istr.trim().parse::<f32>().unwrap(),
-                qstr.trim().parse::<f32>().unwrap(),
-            ));
-        }
+        let ret_val = contents
+            .lines()
+            .map(|line| {
+                let mut parts = line.split_ascii_whitespace();
+                let istr = parts.next().unwrap();
+                let qstr = parts.next().unwrap();
+                [
+                    istr.trim().parse::<f64>().unwrap(),
+                    qstr.trim().parse::<f64>().unwrap(),
+                ]
+            })
+            .collect();
         Ok(ret_val)
     }
 }
@@ -95,25 +97,26 @@ impl eframe::App for MyApp {
                     for row in 1..ROW {
                         ui.horizontal(|ui| {
                             for column in 1..COL {
-                                let plot = Plot::new(format!(
-                                    "Sinus plotter {}-{}",
-                                    row.to_string(),
-                                    column.to_string()
-                                ))
-                                .data_aspect(1.0)
-                                .view_aspect(0.2)
-                                .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
-                                .height(window_height / ROW as f32);
+                                let plot = Plot::new(format!("Sinus plotter {row}-{column}"))
+                                    .data_aspect(1.0)
+                                    .view_aspect(0.2)
+                                    .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
+                                    .height(window_height / ROW as f32);
 
                                 plot.show(ui, |plot_ui| {
-                                    let points =
-                                        Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                                    let points = Points::new(
+                                        self.data
+                                            .points()
+                                            .iter()
+                                            .map(|i| [i.x, i.y])
+                                            .collect::<Vec<[f64; 2]>>(),
+                                    ); //will do a .clone()
                                     plot_ui.points(points);
                                     if plot_ui.plot_clicked() {
                                         for (_, value) in self.plot_clicked.iter_mut().enumerate() {
                                             *value = false;
                                         }
-                                        println!("--> row {} col {}", row, column);
+                                        println!("--> row {row} col {column}");
                                         self.plot_clicked[column + row * ROW] = true;
                                     }
                                 });
@@ -126,17 +129,21 @@ impl eframe::App for MyApp {
                         //println!("{}  {}-{}", index, index / (ROW), index % COL);
                         ui.label(format!("Plot  {}-{}", index / (ROW), index % COL));
                         //*value = false;
-                        let plot = Plot::new(format!(
-                            "Sinus plotter {}-{}",
-                            (index / (ROW)).to_string(),
-                            (index % COL).to_string()
-                        ))
-                        .data_aspect(1.0)
-                        .view_aspect(1.0)
-                        .legend(Legend::default())
-                        .height(window_height);
+                        let row = (index / ROW) as u32;
+                        let col = (index % COL) as u32;
+                        let plot = Plot::new(format!("Sinus plotter {row}-{col}"))
+                            .data_aspect(1.0)
+                            .view_aspect(1.0)
+                            .legend(Legend::default())
+                            .height(window_height);
                         plot.show(ui, |plot_ui| {
-                            let points = Points::new(Values::from_values(self.data.to_vec())); //will do a .clone()
+                            let points = Points::new(
+                                self.data
+                                    .points()
+                                    .iter()
+                                    .map(|i| [i.x, i.y])
+                                    .collect::<Vec<[f64; 2]>>(),
+                            ); //will do a .clone()
                             plot_ui.points(points);
                         });
                     }
