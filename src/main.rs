@@ -12,8 +12,8 @@ const COL: usize = 5;
 fn main() {
     let options = eframe::NativeOptions::default();
     let mut app = MyApp::default();
-    app.data = match app.read_meas_data("seq.dat".to_string()){
-        Ok(data) =>data,
+    app.data = match app.read_meas_data("seq.dat".to_string()) {
+        Ok(data) => data,
         Err(_) => app.get_measurement(),
     };
     eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(app)));
@@ -43,9 +43,9 @@ impl MyApp {
             Value::new(x.cos(), x.sin())
         });
 
-       sin.collect()
+        sin.collect()
     }
-    
+
     fn read_meas_data(&mut self, filename: String) -> std::io::Result<Vec<Value>> {
         let mut ret_val = Vec::<Value>::new();
         let mut file = File::open(filename)?;
