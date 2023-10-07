@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
-use egui::plot::{Legend, Plot, PlotPoints, Points};
 use egui::Vec2;
+use egui_plot::{PlotPoints, Plot, Points, Legend};
 use std::fs::File;
 use std::io::prelude::*;
 use std::time::SystemTime;
@@ -112,7 +112,7 @@ impl eframe::App for MyApp {
                                             .collect::<Vec<[f64; 2]>>(),
                                     ); //will do a .clone()
                                     plot_ui.points(points);
-                                    if plot_ui.plot_clicked() {
+                                    if plot_ui.response().clicked() {
                                         for (_, value) in self.plot_clicked.iter_mut().enumerate() {
                                             *value = false;
                                         }
