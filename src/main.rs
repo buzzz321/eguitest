@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 use eframe::egui;
 use egui::Vec2;
-use egui_plot::{PlotPoints, Plot, Points, Legend};
+use egui_plot::{Legend, Plot, PlotPoints, Points};
 use std::fs::File;
 use std::io::prelude::*;
 use std::time::SystemTime;
@@ -69,6 +69,7 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_height = ui.available_height();
+            let window_width = ui.available_width();
             ui.heading("My egui Application");
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -97,11 +98,13 @@ impl eframe::App for MyApp {
                     for row in 1..ROW {
                         ui.horizontal(|ui| {
                             for column in 1..COL {
+                                let grid_size_x = window_width / ROW as f32;
+                                let grid_size_y = window_height / COL as f32;
                                 let plot = Plot::new(format!("Sinus plotter {row}-{column}"))
                                     .data_aspect(1.0)
-                                    .view_aspect(0.2)
-                                    .set_margin_fraction(Vec2 { x: 0.1, y: 0.1 })
-                                    .height(window_height / ROW as f32);
+                                    .set_margin_fraction(Vec2 { x: 0.01, y: 0.01 })
+                                    .height(grid_size_x * 0.20)
+                                    .width(grid_size_y * 0.20);
 
                                 plot.show(ui, |plot_ui| {
                                     let points = Points::new(
