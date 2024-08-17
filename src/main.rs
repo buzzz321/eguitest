@@ -4,6 +4,7 @@ use egui::Vec2;
 use egui_plot::{Legend, Plot, PlotPoints, Points};
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 use std::time::SystemTime;
 
 const ROW: usize = 5;
@@ -16,7 +17,16 @@ fn main() {
         Ok(data) => data,
         Err(_) => app.get_measurement(),
     };
-    _ = eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(app)));
+    _ = eframe::run_native(
+        "My egui App",
+        options,
+        Box::new(|cc| {
+            // This gives us image support:
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+
+            Ok(Box::new(app))
+        }),
+    )
 }
 
 struct MyApp {
@@ -47,7 +57,12 @@ impl MyApp {
     }
 
     fn read_meas_data(&mut self, filename: String) -> std::io::Result<PlotPoints> {
-        let mut file = File::open(filename)?;
+        let path = Path::new(&filename);
+        let display = path.display();
+        let mut file = match File::open(path) {
+            Err(why) => panic!("couldn't open {}: {}", display, why),
+            Ok(file) => file,
+        };
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let ret_val = contents
@@ -103,8 +118,8 @@ impl eframe::App for MyApp {
                                 let plot = Plot::new(format!("Sinus plotter {row}-{column}"))
                                     .data_aspect(1.0)
                                     .set_margin_fraction(Vec2 { x: 0.01, y: 0.01 })
-                                    .height(grid_size_x * 0.20)
-                                    .width(grid_size_y * 0.20);
+                                    .height(grid_size_x * 0.30)
+                                    .width(grid_size_y * 0.30);
 
                                 plot.show(ui, |plot_ui| {
                                     let points = Points::new(
@@ -116,7 +131,7 @@ impl eframe::App for MyApp {
                                     ); //will do a .clone()
                                     plot_ui.points(points);
                                     if plot_ui.response().clicked() {
-                                        for (_, value) in self.plot_clicked.iter_mut().enumerate() {
+                                        for value in self.plot_clicked.iter_mut() {
                                             *value = false;
                                         }
                                         println!("--> row {row} col {column}");
