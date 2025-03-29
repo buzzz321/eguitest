@@ -60,7 +60,10 @@ impl MyApp {
         let path = Path::new(&filename);
         let display = path.display();
         let mut file = match File::open(path) {
-            Err(why) => panic!("couldn't open {}: {}", display, why),
+            Err(why) => {
+                println!("couldn't open {}: {}", display, why);
+                return Err(why);
+            },
             Ok(file) => file,
         };
         let mut contents = String::new();
