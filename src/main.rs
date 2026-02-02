@@ -12,10 +12,13 @@ const COL: usize = 5;
 
 fn main() {
     let options = eframe::NativeOptions::default();
-    let mut app = MyApp::default();
-    app.data = match app.read_meas_data("seq.dat".to_string()) {
+    let data = match MyApp::read_meas_data("seq.dat".to_string()) {
         Ok(data) => data,
-        Err(_) => app.get_measurement(),
+        Err(_) => MyApp::get_measurement(),
+    };
+    let app = MyApp {
+        data,
+        ..MyApp::default()
     };
     _ = eframe::run_native(
         "My egui App",
@@ -27,15 +30,16 @@ fn main() {
             Ok(Box::new(app))
         }),
     )
+    .unwrap();
 }
 
-struct MyApp {
-    data: PlotPoints,
+struct MyApp<'a> {
+    data: PlotPoints<'a>,
     before: SystemTime,
     plot_clicked: [bool; COL * ROW],
 }
 
-impl Default for MyApp {
+impl<'a> Default for MyApp<'a> {
     fn default() -> Self {
         Self {
             data: PlotPoints::new(vec![[0.0, 0.0]]),
@@ -45,25 +49,25 @@ impl Default for MyApp {
     }
 }
 
-impl MyApp {
+impl<'a> MyApp<'a> {
     #[allow(dead_code)]
-    fn get_measurement(&self) -> PlotPoints {
+    pub fn get_measurement() -> PlotPoints<'a> {
         (0..1000)
             .map(|i| {
                 let x = i as f64 * 0.01;
                 [x.cos(), x.sin()]
             })
-            .collect::<PlotPoints>()
+            .collect::<PlotPoints<'a>>()
     }
 
-    fn read_meas_data(&mut self, filename: String) -> std::io::Result<PlotPoints> {
+    pub fn read_meas_data(filename: String) -> std::io::Result<PlotPoints<'a>> {
         let path = Path::new(&filename);
         let display = path.display();
         let mut file = match File::open(path) {
             Err(why) => {
                 println!("couldn't open {}: {}", display, why);
                 return Err(why);
-            },
+            }
             Ok(file) => file,
         };
         let mut contents = String::new();
@@ -83,7 +87,7 @@ impl MyApp {
         Ok(ret_val)
     }
 }
-impl eframe::App for MyApp {
+impl eframe::App for MyApp<'_> {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             let window_height = ui.available_height();
@@ -126,6 +130,7 @@ impl eframe::App for MyApp {
 
                                 plot.show(ui, |plot_ui| {
                                     let points = Points::new(
+                                        "",
                                         self.data
                                             .points()
                                             .iter()
@@ -159,6 +164,7 @@ impl eframe::App for MyApp {
                             .height(window_height);
                         plot.show(ui, |plot_ui| {
                             let points = Points::new(
+                                "",
                                 self.data
                                     .points()
                                     .iter()
